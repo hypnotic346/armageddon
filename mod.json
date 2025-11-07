@@ -1,0 +1,14 @@
+{
+	"geode": "4.9.0",
+	"gd": {
+		"win": "2.2074",
+		"android": "2.2074",
+		"mac": "2.2074",
+		"ios": "2.2074"
+	},
+	"id": "hypnotic.com.hypnotic.armageddon",
+	"name": "com.hypnotic.armageddon",
+	"version": "v1.0.0",
+	"developer": "hypnotic",
+	"description": "Multi-feature internal Geometry Dash hacks."
+}
