@@ -9,7 +9,7 @@ namespace gui {
     void universal_t::render() {
         ImGui::SetNextWindowPos(ImGui::GetWindowPos(), ImGuiCond_FirstUseEver);
 
-        if (ImGui::Begin("Universal", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize)) {
+        if (ImGui::Begin("Level", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize)) {
             add_checkbox("Noclip", &settings::get<bool>("universal.noclip"));
             add_checkbox("Show hitboxes", &settings::get<bool>("universal.show_hitboxes"));
             add_checkbox("Show hitboxes on death", &settings::get<bool>("universal.show_hitboxes_death"));

@@ -7,8 +7,12 @@ using namespace geode::prelude;
 
 namespace hacks {
     class $modify(game_manager, GameManager) {
-        bool isIconUnlocked(int p0, IconType p1)  {
+        bool isIconUnlocked(int p0, IconType p1) {
             return settings::get<bool>("cosmetics.unlock") ? true : GameManager::isIconUnlocked(p0, p1);
-        }   
+        }
+
+        bool isColorUnlocked(int p0, UnlockType p1) {
+            return settings::get<bool>("cosmetics.unlock") ? true : GameManager::isColorUnlocked(p0, p1);
+        }
     };
-}
+} // namespace hacks

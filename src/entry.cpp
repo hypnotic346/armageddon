@@ -1,5 +1,7 @@
 #include "imgui/imgui.h"
 #include <Geode/Geode.hpp>
+#include <OpenGL/CGLCurrent.h>
+#include <OpenGL/OpenGL.h>
 #include <gui/gui.hpp>
 
 using namespace geode::prelude;
@@ -9,6 +11,12 @@ using namespace geode::prelude;
 #endif
 
 $on_mod(Loaded) {
+#ifdef __APPLE__
+    GLint sync = 0;
+    CGLContextObj ctx = CGLGetCurrentContext();
+    CGLSetParameter(ctx, kCGLCPSwapInterval, &sync);
+#endif
+
     gui::ctx->setup();
     gui::ctx->render();
 }

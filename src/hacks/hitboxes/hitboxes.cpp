@@ -1,5 +1,6 @@
 #include "hitboxes.hpp"
 #include "Geode/cocos/draw_nodes/CCDrawNode.h"
+#include "ccTypes.h"
 #include <geode/modify/GJBaseGameLayer.hpp>
 #include <geode/modify/GameObject.hpp>
 
@@ -8,46 +9,34 @@
 namespace hacks {
     bool active1 = false, active2 = false;
 
-    class $modify(game_object, GameObject) {
-        void update(float p0) {
-            GameObject::update(p0);
+    namespace util {
+        // thx prevter (https://github.com/EclipseMenu/EclipseMenu/blob/c3f7239decca141d8c8c2d3bdc917ace4f23ecbf/src/hacks/Level/ShowHitboxes.cpp#L131-L234)
+        static void for_each_object(const GJBaseGameLayer *game, const std::function<void(GameObject *ß)> &callback) {
+            const int count = game->m_sections.empty() ? -1 : game->m_sections.size();
 
-            const PlayLayer *play_layer = PlayLayer::get();
+            for (int i = game->m_leftSectionIndex; i <= game->m_rightSectionIndex && i < count; ++i) {
+                const auto left_section = game->m_sections[i];
 
-            if (!play_layer) return;
+                if (!left_section) continue;
 
-            CCDrawNode *node = play_layer->m_debugDrawNode;
+                const auto left_section_size = left_section->size();
 
-            const GameObjectType object_type = this->m_objectType;
-            const CCRect rect = this->getObjectRect();
+                for (int j = game->m_bottomSectionIndex; j <= game->m_topSectionIndex && j < left_section_size; ++j) {
+                    auto section = left_section->at(j);
+                    if (!section) continue;
 
-            const float hitbox_scale = this->getScale();
-            const float radius = this->getObjectRadius();
+                    const auto section_size = game->m_sectionSizes[i]->at(j);
 
-            ccColor4F col = {};
+                    for (int k = 0; k < section_size; ++k) {
+                        auto obj = section->at(k);
+                        if (!obj) continue;
 
-            std::array<CCPoint, 4> rect_vertices = {
-                CCPointMake(rect.getMinX(), rect.getMinY()) * hitbox_scale,
-                CCPointMake(rect.getMinX(), rect.getMaxY()) * hitbox_scale,
-                CCPointMake(rect.getMaxX(), rect.getMaxY()) * hitbox_scale,
-                CCPointMake(rect.getMaxX(), rect.getMinY()) * hitbox_scale};
-
-            switch (object_type) {
-                case GameObjectType::Hazard:
-                case GameObjectType::Breakable:
-                case GameObjectType::Solid: {
-                    col = {0.0f, 0.0f, 1.0f, 1.0f};
-
-                    if (object_type == GameObjectType::Hazard)
-                        col = {1.0f, 0.0f, 0.0f, 1.0f};
-
-                    node->drawPolygon(rect_vertices.data(), rect_vertices.size(), {}, 0.5f, col);
-                } break;
-                default:
-                    break;
+                        callback(obj);
+                    }
+                }
             }
         }
-    };
+    } // namespace util
 
     class $modify(base_game_layer, GJBaseGameLayer) {
         // (@hypnotic) summary: draws hitboxes on player (+ on death)
@@ -92,8 +81,48 @@ namespace hacks {
                             rotate(CCPointMake(rect.getMaxX(), rect.getMaxY()), origin, rotation),
                             rotate(CCPointMake(rect.getMaxX(), rect.getMinY()), origin, rotation)};
 
-                        node->drawPolygon(rotated_vertices.data(), rotated_vertices.size(), {}, 0.5f, ccColor4F(0.55f, 0.0f, 0.0f, 1.0f));
-                        node->drawPolygon(vertices.data(), vertices.size(), {}, 0.5f, ccColor4F(1.0f, 0.0f, 0.0f, 1.0f));
+                        /* player hitboxes */ {
+                            node->drawPolygon(rotated_vertices.data(), rotated_vertices.size(), {}, 0.5f, ccColor4F(0.55f, 0.0f, 0.0f, 1.0f));
+                            node->drawPolygon(vertices.data(), vertices.size(), {}, 0.5f, ccColor4F(1.0f, 0.0f, 0.0f, 1.0f));
+                        }
+
+                        /* object hitboxes */ {
+                            util::for_each_object(this, [&](GameObject *object) {
+                                const GameObjectType object_type = object->m_objectType;
+                                const CCRect rect = object->getObjectRect();
+
+                                const CCPoint origin = object->getPosition();
+                                const float hitbox_scale = object->getScale();
+                                const float radius = object->getObjectRadius();
+
+                                ccColor4F col = {};
+
+                                std::array<CCPoint, 4> rect_vertices = {
+                                    CCPointMake(rect.getMinX(), rect.getMinY()) * hitbox_scale,
+                                    CCPointMake(rect.getMinX(), rect.getMaxY()) * hitbox_scale,
+                                    CCPointMake(rect.getMaxX(), rect.getMaxY()) * hitbox_scale,
+                                    CCPointMake(rect.getMaxX(), rect.getMinY()) * hitbox_scale};
+
+                                switch (object_type) {
+                                    case GameObjectType::Hazard:
+                                    case GameObjectType::Breakable:
+                                    case GameObjectType::Solid: {
+                                        col = {0.0f, 0.0f, 1.0f, 1.0f};
+
+                                        if (object_type == GameObjectType::Hazard)
+                                            col = {1.0f, 0.0f, 0.0f, 1.0f};
+
+                                        if (object->m_objectRadius > 0.f) {
+                                            node->drawCircle(origin, radius, {}, 0.5f, col, 24); // segments = 8 * 3 (ngl its to jagged with 8 segs)
+                                        } else {
+                                            node->drawPolygon(rect_vertices.data(), rect_vertices.size(), {}, 0.5f, col);
+                                        }
+                                    } break;
+                                    default:
+                                        break;
+                                }
+                            });
+                        }
                     }
                 }
             }
